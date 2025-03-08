@@ -24,11 +24,11 @@ class FastAPITestUser(HttpUser):
     def get_item(self):
         token = self.get_valid_token()
         if token:
-            self.client.get(f"/items/{random.randint(1, 100)}", headers={"Authorization": token})
+            self.client.get(f"/items/{random.randint(1, 100)}", headers={"Authorization": f"Bearer {token}"})
 
     @task(1)  # POST 요청 실행
     def create_item(self):
         token = self.get_valid_token()
         if token:
             data = {"name": "Test Item", "price": random.uniform(10, 100)}
-            self.client.post("/items/", json=data, headers={"Authorization": token})
+            self.client.post("/items/", json=data, headers={"Authorization": f"Bearer {token}"})
