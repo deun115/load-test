@@ -7,9 +7,9 @@ class FastAPITestUser(HttpUser):
 
     def on_start(self):
         """테스트 시작 시 실행: 로그인하여 토큰 가져오기"""
-        response = self.client.post("/login/", json={"username": "admin123", "password": "admin123"})
+        response = self.client.post("/login/", data={"username": "admin123", "password": "admin123"})
         if response.status_code == 200:
-            self.token = response.json()["token"]
+            self.token = response.json()["access_token"]
         else:
             self.token = None
 
