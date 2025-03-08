@@ -1,7 +1,7 @@
 import os
 import time
-from uuid import uuid4
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from uuid import uuid4, UUID
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -21,27 +21,17 @@ class User(BaseModel):
     password: str
 
 
-# 토큰 자동 삭제 (배경 작업)
-def remove_token_after_delay(token: str, delay: int = 300):
-    """지정된 시간 후 토큰 삭제 (기본 5분)"""
-    time.sleep(delay)
-    token_set.discard(token)  # 존재하면 삭제
-
-
 # 로그인 엔드포인트
 @app.post('/login/')
 async def login(user: User, background_tasks: BackgroundTasks):
-    username = os.getenv('USERNAME', 'admin')  # 기본값 설정
-    password = os.getenv('PASSWORD', 'password')
+    username = os.getenv('USERNAME', 'admin123')  # 기본값 설정
+    password = os.getenv('PASSWORD', 'admin123')
 
     if user.username == username and user.password == password:
         rand_token = uuid4()
         token_set.add(rand_token)
 
-        # 일정 시간이 지나면 토큰 삭제
-        background_tasks.add_task(remove_token_after_delay, rand_token, 300)
-
-        return {'token': rand_token}
+        return {'token': str(rand_token)}  # UUID를 문자열로 반환
     else:
         raise HTTPException(status_code=401, detail='Invalid username or password')
 
@@ -50,25 +40,34 @@ async def login(user: User, background_tasks: BackgroundTasks):
 @app.get("/tokens/")
 async def get_tokens():
     """현재 유효한 토큰 목록 반환"""
-    return {"tokens": list(token_set)}
+    return {"tokens": [str(token) for token in token_set]}  # UUID를 문자열로 변환
 
 
 # 토큰 검증 함수
-def verify_token(token: str):
-    if token not in token_set:
+def verify_token(request: Request):
+    token = request.headers.get("Authorization")
+    
+    if not token:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    
+    try:
+        uuid_token = UUID(token)  # 문자열을 UUID로 변환
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid Token format")
+
+    if uuid_token not in token_set:
         raise HTTPException(status_code=401, detail="Invalid Token")
-    return True
 
 
 # 간단한 GET 엔드포인트
 @app.get("/items/{item_id}")
-async def read_item(item_id: int):
+async def read_item(item_id: int, _: None = Depends(verify_token)):  # 검증만 수행
     time.sleep(0.2)  # 응답 지연 시뮬레이션
     return {"item_id": item_id, "name": f"Item {item_id}"}
 
 
 # POST 요청 엔드포인트 (토큰 필요)
 @app.post("/items/")
-async def create_item(item: Item, token: str = Depends(verify_token)):
+async def create_item(item: Item, _: None = Depends(verify_token)):  # 검증만 수행
     time.sleep(0.3)  # 응답 지연 시뮬레이션
     return {"message": f"Item {item.name} created", "price": item.price}
