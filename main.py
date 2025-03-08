@@ -35,7 +35,7 @@ async def login(user: User, background_tasks: BackgroundTasks):
     password = os.getenv('PASSWORD', 'password')
 
     if user.username == username and user.password == password:
-        rand_token = uuid4().hex()
+        rand_token = uuid4()
         token_set.add(rand_token)
 
         # 일정 시간이 지나면 토큰 삭제
@@ -44,6 +44,13 @@ async def login(user: User, background_tasks: BackgroundTasks):
         return {'token': rand_token}
     else:
         raise HTTPException(status_code=401, detail='Invalid username or password')
+
+
+# 현재 토큰 목록 조회
+@app.get("/tokens/")
+async def get_tokens():
+    """현재 유효한 토큰 목록 반환"""
+    return {"tokens": list(token_set)}
 
 
 # 토큰 검증 함수
@@ -55,7 +62,7 @@ def verify_token(token: str):
 
 # 간단한 GET 엔드포인트
 @app.get("/items/{item_id}")
-async def read_item(item_id: int, token: str = Depends(verify_token)):
+async def read_item(item_id: int):
     time.sleep(0.2)  # 응답 지연 시뮬레이션
     return {"item_id": item_id, "name": f"Item {item_id}"}
 
