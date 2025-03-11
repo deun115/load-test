@@ -20,7 +20,7 @@ class FastAPITestUser(HttpUser):
             return random.choice(response.json()["tokens"])  # 무작위로 하나 선택
         return None
 
-    @task(3)  # GET 요청을 3배 더 많이 실행
+    @task(1)
     def get_item(self):
         token = self.get_valid_token()
         if token:
@@ -32,3 +32,9 @@ class FastAPITestUser(HttpUser):
         if token:
             data = {"name": "Test Item", "price": random.uniform(10, 100)}
             self.client.post("/items/", json=data, headers={"Authorization": f"Bearer {token}"})
+
+    @task(2)
+    def create_image(self):
+        token = self.get_valid_token()
+        if token:
+            self.client.post("/images/", headers={"Authorization": f"Bearer {token}"})

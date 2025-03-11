@@ -1,7 +1,9 @@
+import io
 import os
 import time
 from uuid import uuid4, UUID
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Response
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -83,5 +85,9 @@ async def create_image(_: None = Depends(verify_token)):
     image = cv2.imread("inputs/dog.png")
     blurred = cv2.blur(image, (9, 9))
     blurred_pil = Image.fromarray(blurred)
+    
+    img_byte_arr = io.BytesIO()
+    blurred_pil.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)  # 바이트 스트림의 시작점으로 이동
 
-    return Response({"message": "Image processing completed", "image": blurred_pil}, media_type="image/png")
+    return StreamingResponse(img_byte_arr, media_type="image/png")
