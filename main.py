@@ -1,10 +1,13 @@
 import os
 import time
 from uuid import uuid4, UUID
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from dotenv import load_dotenv
+
+import cv2
+from PIL import Image
 
 load_dotenv()  # 환경 변수 로드
 
@@ -34,18 +37,11 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), background_tas
         rand_token = uuid4()
         token_set.add(rand_token)
         
-        background_tasks.add_task(remove_token_after_delay, rand_token, 300)
+        # background_tasks.add_task(remove_token_after_delay, rand_token, 300)
 
         return {"access_token": str(rand_token), "token_type": "bearer"}  # OAuth2 형식의 응답
     else:
         raise HTTPException(status_code=401, detail="Invalid username or password")
-
-
-# 현재 토큰 목록 조회
-@app.get("/tokens/")
-async def get_tokens():
-    """현재 유효한 토큰 목록 반환"""
-    return {"tokens": [str(token) for token in token_set]}  # UUID를 문자열로 변환
 
 
 # 토큰 검증 함수 (OAuth2 방식)
@@ -59,6 +55,16 @@ def verify_token(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=401, detail="Invalid Token")
 
 
+# 현재 토큰 목록 조회
+@app.get("/tokens/{access_code:str}")
+async def get_tokens(access_code: str):
+    """현재 유효한 토큰 목록 반환"""
+    if access_code == os.getenv('ACCESS_CODE', '1234'):
+        return {"tokens": [str(token) for token in token_set]}  # UUID를 문자열로 변환
+    else:
+        raise HTTPException(status_code=403, detail="Invalid Access Code")
+
+
 @app.get("/items/{item_id}")
 async def read_item(item_id: int, _: None = Depends(verify_token)):  # 검증만 수행
     time.sleep(0.2)  # 응답 지연 시뮬레이션
@@ -69,3 +75,13 @@ async def read_item(item_id: int, _: None = Depends(verify_token)):  # 검증만
 async def create_item(item: Item, _: None = Depends(verify_token)):  # 검증만 수행
     time.sleep(0.3)  # 응답 지연 시뮬레이션
     return {"message": f"Item {item.name} created", "price": item.price}
+
+
+# 이미지 처리
+@app.post("/images/")
+async def create_image(_: None = Depends(verify_token)):
+    image = cv2.imread("inputs/dog.png")
+    blurred = cv2.blur(image, (9, 9))
+    blurred_pil = Image.fromarray(blurred)
+
+    return Response({"message": "Image processing completed", "image": blurred_pil}, media_type="image/png")

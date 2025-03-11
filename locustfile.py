@@ -15,7 +15,7 @@ class FastAPITestUser(HttpUser):
 
     def get_valid_token(self):
         """유효한 토큰 목록을 조회"""
-        response = self.client.get("/tokens/")
+        response = self.client.get(f"/tokens/{str(1234)}")
         if response.status_code == 200 and response.json()["tokens"]:
             return random.choice(response.json()["tokens"])  # 무작위로 하나 선택
         return None

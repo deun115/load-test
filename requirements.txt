@@ -21,6 +21,9 @@ Jinja2==3.1.6
 locust==2.33.0
 MarkupSafe==3.0.2
 msgpack==1.1.0
+numpy==2.2.3
+opencv-python==4.11.0.86
+pillow==11.1.0
 psutil==7.0.0
 pydantic==2.10.6
 pydantic_core==2.27.2
