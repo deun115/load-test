@@ -37,4 +37,11 @@ class FastAPITestUser(HttpUser):
     def create_image(self):
         token = self.get_valid_token()
         if token:
-            self.client.post("/images/", headers={"Authorization": f"Bearer {token}"})
+            self.client.post("/process_images/", headers={"Authorization": f"Bearer {token}"})
+
+    @task(2)
+    def get_files(self):
+        token = self.get_valid_token()
+        file_name = random.choice(["MainBefore.jpg", "brain.jpg", "free-nature-images.jpg"])
+        if token:
+            self.client.get(f"/get_files/{file_name}", headers={"Authorization": f"Bearer {token}"})
