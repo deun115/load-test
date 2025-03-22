@@ -2,7 +2,7 @@ import io
 import os
 import time
 from uuid import uuid4, UUID
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Response, logger
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -80,7 +80,7 @@ async def create_item(item: Item, _: None = Depends(verify_token)):  # 검증만
 
 
 # 이미지 처리
-@app.post("/images/")
+@app.post("/process_images/")
 async def create_image(_: None = Depends(verify_token)):
     image = cv2.imread("inputs/dog.png")
     blurred = cv2.blur(image, (9, 9))
@@ -91,3 +91,14 @@ async def create_image(_: None = Depends(verify_token)):
     img_byte_arr.seek(0)  # 바이트 스트림의 시작점으로 이동
 
     return StreamingResponse(img_byte_arr, media_type="image/png")
+
+
+# 파일 전송 
+@app.get("/get_files/{file_name:str}")
+async def get_file(file_name: str, _: None = Depends(verify_token)):
+    internal_path = f"/files/{file_name}"
+
+    return Response(
+        status_code=200,
+        headers={"X-Accel-Redirect": internal_path}
+    )
