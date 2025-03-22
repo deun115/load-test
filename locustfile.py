@@ -3,7 +3,7 @@ import random
 
 
 class FastAPITestUser(HttpUser):
-    wait_time = between(1, 3)  # 요청 간 대기 시간
+    wait_time = between(3, 5)  # 요청 간 대기 시간
 
     def on_start(self):
         """테스트 시작 시 실행: 로그인하여 토큰 가져오기"""
@@ -45,3 +45,10 @@ class FastAPITestUser(HttpUser):
         file_name = random.choice(["MainBefore.jpg", "brain.jpg", "free-nature-images.jpg"])
         if token:
             self.client.get(f"/get_files/{file_name}", headers={"Authorization": f"Bearer {token}"})
+
+    @task(1)
+    def get_large_files(self):
+        token = self.get_valid_token()
+        file_name = "svs_image.png"
+        if token:
+            self.client.get(f"/get_files/{file_name}", headers={"Authorization": f"Bearer {token}"}, timeout=30)

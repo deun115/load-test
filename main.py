@@ -1,8 +1,9 @@
 import io
+import logging
 import os
 import time
 from uuid import uuid4, UUID
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Response, logger
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request, Response, logger
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -16,6 +17,20 @@ load_dotenv()  # 환경 변수 로드
 app = FastAPI()
 token_set = set()  # 빠른 검색을 위한 set 사용
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")  # OAuth2 Bearer 토큰 사용
+
+
+# 로깅 설정
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# 요청 시간 측정용 미들웨어
+@app.middleware("http")
+async def log_request_time(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+    logger.info(f"{request.method} {request.url.path} completed in {duration:.4f}s with status {response.status_code}")
+    return response
 
 
 # 요청 데이터 모델
