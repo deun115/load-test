@@ -7,6 +7,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - /Users/yang-eunseo/Desktop/images:/images
+      - /Desktop/images:/images
     ports:
       - "80:80"
